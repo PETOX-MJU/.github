@@ -56,15 +56,44 @@
 
 ## 기술 스택
 
+### FE — 안드로이드 앱
+
 | 영역 | 기술 |
 |---|---|
-| 앱 | React Native 0.87 (Android 전용) + Kotlin 네이티브 모듈 |
-| 화면 오버레이 | 포그라운드 서비스 + WindowManager 오버레이 |
-| 숏폼 감지 | UsageStatsManager(앞에 있는 앱) + 화면 캡처 → 숏폼 분류기(TFLite, 온디바이스) |
-| 반려동물 캐릭터 | ML Kit Subject Segmentation(배경 제거) → 털색 추출 → 견종 픽셀 템플릿 재색칠 (온디바이스, 외부 생성형 AI API 미사용) |
-| 주간 분석 | 폰에서 도는 Kotlin 분석기, 한 줄 요약은 온디바이스 SLM(llama.rn) |
-| 백엔드 | Supabase — Auth(이메일·카카오), PostgreSQL + RLS, RPC(서버 함수), pg_cron, Edge Function |
-| 배포·검증 | GitHub Actions (PR마다 로컬 Supabase로 테스트, `main` 머지 시 운영 DB에 마이그레이션) |
+| 앱 | React Native 0.87 (Android 전용), React Navigation, Reanimated, supabase-js |
+| 네이티브 모듈 | Kotlin — 오버레이·스크린타임·숏폼 분류·사진 펫 |
+| 화면 오버레이 | 포그라운드 서비스 + WindowManager |
+| 숏폼 감지 | UsageStatsManager(앞에 있는 앱) + MediaProjection 화면 캡처 → TFLite 숏폼 분류기 |
+| 반려동물 캐릭터 | ML Kit Subject Segmentation(배경 제거) → 털색 추출 → 견종 픽셀 템플릿 재색칠 |
+| 주간 분석·요약 | Kotlin 스크린타임 분석기, 온디바이스 SLM(llama.rn) |
+
+### BE — Supabase
+
+| 영역 | 기술 |
+|---|---|
+| 인증 | Supabase Auth (이메일, 카카오 OAuth) |
+| 데이터 | PostgreSQL + Row-Level Security, 컬럼 단위 권한 |
+| 서버 로직 | PL/pgSQL `security definer` 함수(RPC) — 출석·구매·코인·미션 판정 |
+| 스케줄 | pg_cron — 매일 미션 생성·정산 |
+| 기타 | Edge Function(회원 탈퇴) |
+| 테스트·배포 | pytest(로컬 Supabase에서 RLS·RPC·동시성 검증), GitHub Actions(PR마다 테스트, `main` 머지 시 운영 DB 마이그레이션) |
+
+### AI — 모델 제작 (추론은 전부 온디바이스)
+
+| 모델·기능 | 만드는 방법 | 앱에서 |
+|---|---|---|
+| 숏폼 분류기 | MobileNetV3-Small 전이학습 (TensorFlow) → TFLite float16, 입력 448×224 | TFLite |
+| 한 줄 요약 | Qwen3.5 0.8B LoRA 파인튜닝 (MLX) → llama.cpp 4비트 GGUF (약 540MB) | llama.rn |
+| 사진으로 펫 만들기 | Python(NumPy·Pillow) 기준 구현 → Kotlin 이식, 대조 테스트로 일치 검증 | ML Kit + Kotlin |
+| 사진 유효성 | ML Kit Image Labeling (개·고양이 판별) | ML Kit |
+| 스크린타임 분석 | 주간 분석·미션·목표 제안 규칙 (Kotlin) | Kotlin |
+
+사진과 화면 캡처는 폰 밖으로 나가지 않으며, 외부 생성형 AI API를 쓰지 않습니다.
+
+### 공통
+
+| 영역 | 기술 |
+|---|---|
 | 개발 프로세스 | Claude Code (설계·구현·테스트 전 과정 활용) |
 
 ## 기대 효과
